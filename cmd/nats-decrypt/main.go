@@ -2,13 +2,10 @@ package main
 
 import (
 	"encoding/hex"
-	"fmt"
 	"log"
-	"math/rand"
 	"oc-go/internal/crypt"
 	"os"
 	"runtime"
-	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -33,7 +30,6 @@ func main() {
 	nc, _ := nats.Connect(nats.DefaultURL)
 	js, _ := nc.JetStream()
 
-	num := rand.Intn(10)
 	js.QueueSubscribe(os.Getenv("NATS_SUBJ"), os.Getenv("NATS_QUEUE"), func(msg *nats.Msg) {
 		// os
 		f, err := os.OpenFile(os.Getenv("LOG_PATH")+"/decrypt."+currentDate+".log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -47,10 +43,8 @@ func main() {
 		cipherText, _ := hex.DecodeString(content)
 		plainText := crypt.Decrypt(cipherText, key)
 
-		fmt.Println(string(plainText), num)
-
 		// append write
-		f.WriteString(string(plainText) + strconv.Itoa(num) + " \n")
+		f.WriteString(string(plainText) + " \n")
 
 		f.Close()
 		msg.Ack()
