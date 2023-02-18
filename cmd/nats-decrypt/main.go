@@ -13,15 +13,17 @@ import (
 )
 
 func main() {
-	// date
-	currentDate := time.Now().Format("20060102")
+	args := os.Args[1:]
 
 	// load env
-	err := godotenv.Load(".env")
+	err := godotenv.Load(args[0])
 
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
+
+	// date
+	currentDate := time.Now().Format("20060102")
 
 	// crypt
 	key, _ := hex.DecodeString(os.Getenv("KEY"))
