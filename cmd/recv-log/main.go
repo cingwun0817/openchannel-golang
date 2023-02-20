@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net"
@@ -13,6 +14,12 @@ import (
 
 	"github.com/joho/godotenv"
 )
+
+type Log struct {
+	Type    string `json:"type"`
+	Date    string `json:"date"`
+	Content string `json:"content"`
+}
 
 func main() {
 	args := os.Args[1:]
@@ -88,7 +95,13 @@ func handleRequest(conn net.Conn, key []byte) {
 			cipher := crypt.Encrypt(text, key)
 			cipherText := hex.EncodeToString(cipher)
 
-			wText = cipherText
+			// wText = cipherText
+
+			// json
+			log := Log{Type: "encrypt", Date: currentDate, Content: cipherText}
+			jsonLog, _ := json.Marshal(log)
+
+			wText = string(jsonLog)
 		}
 
 		// append write
