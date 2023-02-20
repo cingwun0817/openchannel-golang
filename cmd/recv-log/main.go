@@ -2,10 +2,13 @@ package main
 
 import (
 	"encoding/hex"
+	"io/ioutil"
 	"log"
 	"net"
 	"oc-go/internal/crypt"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -13,13 +16,18 @@ import (
 
 func main() {
 	args := os.Args[1:]
+	if len(args) == 0 {
+		log.Fatalf("[Error] Not setting conf file")
+	}
 
 	// load env
 	err := godotenv.Load(args[0])
 
 	if err != nil {
-		log.Fatalf("Error loading .env file")
+		log.Fatalf("[Error] Error loading .env file")
 	}
+
+	log.Println("[Info] Loaded configuration file")
 
 	// listen
 	listener, err := net.Listen("tcp", os.Getenv("HOST")+":"+os.Getenv("POST"))
@@ -28,7 +36,8 @@ func main() {
 	}
 	defer listener.Close()
 
-	log.Println("Listening on " + os.Getenv("HOST") + ":" + os.Getenv("POST"))
+	log.Println("[Info] Listening on " + os.Getenv("HOST") + ":" + os.Getenv("POST"))
+	log.Println("[Info] Log path " + os.Getenv("LOG_PATH"))
 
 	// crypt
 	key, _ := hex.DecodeString(os.Getenv("KEY"))
@@ -40,6 +49,8 @@ func main() {
 		}
 
 		go handleRequest(conn, key)
+
+		go archiveExpiredFiles()
 	}
 }
 
@@ -71,16 +82,17 @@ func handleRequest(conn net.Conn, key []byte) {
 			log.Fatalf(err.Error())
 		}
 
-		wText := text
+		wText := string(text)
 		if encrypt {
 			// encrypt
-			cipherText := crypt.Encrypt(text, key)
+			cipher := crypt.Encrypt(text, key)
+			cipherText := hex.EncodeToString(cipher)
 
 			wText = cipherText
 		}
 
 		// append write
-		f.WriteString(string(wText) + " \n")
+		f.WriteString(wText + " \n")
 
 		f.Close()
 	}
@@ -89,4 +101,36 @@ func handleRequest(conn net.Conn, key []byte) {
 	conn.Write([]byte("ok"))
 
 	conn.Close()
+}
+
+func archiveExpiredFiles() {
+	expiryDate := time.Now().AddDate(0, 0, -14).Format("20060102")
+
+	files, err := ioutil.ReadDir(os.Getenv("LOG_PATH"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range files {
+		fileName := file.Name()
+
+		firstPos := strings.Index(fileName, ".")
+
+		if !file.IsDir() {
+			prefix := fileName[0:firstPos]
+
+			if prefix == "edge" || prefix == "enedge" {
+				date := fileName[firstPos+1 : firstPos+9]
+
+				intDate, _ := strconv.Atoi(date)
+				intExpiryDate, _ := strconv.Atoi(expiryDate)
+
+				if intDate-intExpiryDate < 0 {
+					os.Remove(os.Getenv("LOG_PATH") + "/" + fileName)
+
+					log.Println("[Info] remove " + fileName)
+				}
+			}
+		}
+	}
 }
