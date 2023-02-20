@@ -42,8 +42,8 @@ func main() {
 		content := string(msg.Data)
 
 		// decrypt
-		cipherText, _ := hex.DecodeString(content)
-		plainText := crypt.Decrypt(cipherText, key)
+		cipher, _ := hex.DecodeString(content)
+		plainText := crypt.Decrypt(cipher, key)
 
 		// append write
 		f.WriteString(string(plainText) + " \n")
