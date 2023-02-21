@@ -13,12 +13,6 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-type Log struct {
-	Type    string `json:"type"`
-	Date    string `json:"date"`
-	Content string `json:"content"`
-}
-
 func main() {
 	args := os.Args[1:]
 
@@ -51,15 +45,19 @@ func main() {
 		}
 
 		// json
-		var log Log
-		json.Unmarshal([]byte(msg.Data), &log)
+		var records [][]interface{}
+		json.Unmarshal(msg.Data, &records)
 
-		// decrypt
-		cipher, _ := hex.DecodeString(log.Content)
-		plainText := crypt.Decrypt(cipher, key)
+		for _, record := range records {
+			log := record[1].(map[string]interface{})
 
-		// append write
-		f.WriteString(string(plainText) + " \n")
+			// decrypt
+			cipher, _ := hex.DecodeString(log["content"].(string))
+			plainText := crypt.Decrypt(cipher, key)
+
+			// append write
+			f.WriteString(string(plainText) + " \n")
+		}
 
 		f.Close()
 		msg.Ack()
