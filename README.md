@@ -78,3 +78,15 @@ ExecStart=/opt/nats-decrypt/bin/nats-decrypt /opt/nats-decrypt/nats-decrypt.conf
 [Install]
 WantedBy=multi-user.target
 ```
+
+## Build Key
+
+![image](https://i.imgur.com/xRlGf0p.jpg)
+
+## Nats Server
+
+#### Add Stream
+```
+Stream Name: LOG
+Subjects: encrypt.>
+```
