@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"oc-go/internal/crypt"
+	"oc-go/internal/generate"
 	"os"
 	"runtime"
 	"time"
@@ -25,12 +26,6 @@ func main() {
 
 	log.Println("[Info] Loaded configuration file")
 
-	// date
-	currentDate := time.Now().Format("20060102")
-
-	// crypt
-	key, _ := hex.DecodeString(os.Getenv("KEY"))
-
 	// nats
 	nc, _ := nats.Connect(nats.DefaultURL)
 	js, _ := nc.JetStream()
@@ -38,6 +33,12 @@ func main() {
 	log.Println("[Info] Connect nats-server: " + nats.DefaultURL)
 
 	js.QueueSubscribe(os.Getenv("NATS_SUBJ"), os.Getenv("NATS_QUEUE"), func(msg *nats.Msg) {
+		// date
+		currentDate := time.Now().Format("20060102")
+
+		// key
+		key, _ := hex.DecodeString(generate.GetKey(currentDate))
+
 		// os
 		f, err := os.OpenFile(os.Getenv("LOG_PATH")+"/decrypt."+currentDate+".log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {

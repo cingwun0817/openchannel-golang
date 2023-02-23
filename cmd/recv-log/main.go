@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"oc-go/internal/crypt"
+	"oc-go/internal/generate"
 	"os"
 	"strconv"
 	"strings"
@@ -46,22 +47,19 @@ func main() {
 	log.Println("[Info] Listening on " + os.Getenv("HOST") + ":" + os.Getenv("POST"))
 	log.Println("[Info] Log path " + os.Getenv("LOG_PATH"))
 
-	// crypt
-	key, _ := hex.DecodeString(os.Getenv("KEY"))
-
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
 
-		go handleRequest(conn, key)
+		go handleRequest(conn)
 
 		go archiveExpiredFiles()
 	}
 }
 
-func handleRequest(conn net.Conn, key []byte) {
+func handleRequest(conn net.Conn) {
 	buf := make([]byte, 16384)
 
 	reqLen, err := conn.Read(buf)
@@ -79,10 +77,13 @@ func handleRequest(conn net.Conn, key []byte) {
 		encrypt = true
 	}
 
-	if reqLen != 0 {
-		// date
-		currentDate := time.Now().Format("20060102")
+	// date
+	currentDate := time.Now().Format("20060102")
 
+	// key
+	key, _ := hex.DecodeString(generate.GetKey(currentDate))
+
+	if reqLen != 0 {
 		// os
 		f, err := os.OpenFile(os.Getenv("LOG_PATH")+"/"+prefixName+"."+currentDate+".log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
@@ -94,8 +95,6 @@ func handleRequest(conn net.Conn, key []byte) {
 			// encrypt
 			cipher := crypt.Encrypt(text, key)
 			cipherText := hex.EncodeToString(cipher)
-
-			// wText = cipherText
 
 			// json
 			log := Log{Type: "encrypt", Date: currentDate, Content: cipherText}
