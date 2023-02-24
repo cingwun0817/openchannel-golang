@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/denisbrodbeck/machineid"
 	"github.com/joho/godotenv"
 )
 
@@ -83,6 +84,12 @@ func handleRequest(conn net.Conn) {
 	// key
 	key, _ := hex.DecodeString(generate.GetKey(currentDate))
 
+	// machine id
+	mId, err := machineid.ID()
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
 	if reqLen != 0 {
 		// os
 		f, err := os.OpenFile(os.Getenv("LOG_PATH")+"/"+prefixName+"."+currentDate+".log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -90,10 +97,13 @@ func handleRequest(conn net.Conn) {
 			log.Fatalf(err.Error())
 		}
 
-		wText := string(text)
+		content := string(text)
+		pos := strings.Index(content, "}")
+		wText := content[0:pos] + `,"machineid_id":"` + mId + `"}`
+
 		if encrypt {
 			// encrypt
-			cipher := crypt.Encrypt(text, key)
+			cipher := crypt.Encrypt([]byte(wText), key)
 			cipherText := hex.EncodeToString(cipher)
 
 			// json
