@@ -98,8 +98,7 @@ func handleRequest(conn net.Conn) {
 		}
 
 		content := string(text)
-		pos := strings.Index(content, "}")
-		wText := content[0:pos] + `,"machineid_id":"` + mId + `"}`
+		wText := content[0:len(content)-1] + `,"machine_id":"` + mId + `"}`
 
 		if encrypt {
 			// encrypt
