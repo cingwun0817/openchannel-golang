@@ -98,6 +98,7 @@ func handleRequest(conn net.Conn) {
 		}
 
 		// add machine_id
+		log.Println(string(text))
 		var jsonData map[string]interface{}
 		unmarshalErr := json.Unmarshal(text, &jsonData)
 		if unmarshalErr != nil {
