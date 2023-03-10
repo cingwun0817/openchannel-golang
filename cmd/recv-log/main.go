@@ -61,14 +61,14 @@ func main() {
 }
 
 func handleRequest(conn net.Conn) {
-	buf := make([]byte, 16384)
+	buf := make([]byte, 4096)
 
 	reqLen, err := conn.Read(buf)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
-	text := buf[1:]
+	text := buf[1:reqLen]
 
 	// prefix
 	prefixName := "edge"
@@ -97,23 +97,33 @@ func handleRequest(conn net.Conn) {
 			log.Fatalf(err.Error())
 		}
 
-		content := string(text)
-		wText := content[0:len(content)-1] + `,"machine_id":"` + mId + `"}`
+		// add machine_id
+		var jsonData map[string]interface{}
+		unmarshalErr := json.Unmarshal(text, &jsonData)
+		if unmarshalErr != nil {
+			log.Fatalf(unmarshalErr.Error())
+		}
+		jsonData["machine_id"] = mId
+
+		wText, err := json.Marshal(jsonData)
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
 
 		if encrypt {
 			// encrypt
-			cipher := crypt.Encrypt([]byte(wText), key)
+			cipher := crypt.Encrypt(wText, key)
 			cipherText := hex.EncodeToString(cipher)
 
 			// json
 			log := Log{Type: "encrypt", Date: currentDate, Content: cipherText}
 			jsonLog, _ := json.Marshal(log)
 
-			wText = string(jsonLog)
+			wText = jsonLog
 		}
 
 		// append write
-		f.WriteString(wText + " \n")
+		f.WriteString(string(wText) + " \n")
 
 		f.Close()
 	}
