@@ -21,16 +21,16 @@ func main() {
 	err := godotenv.Load(args[0])
 
 	if err != nil {
-		log.Fatalf("Error loading .env file")
+		panic("[godotenv load] " + err.Error())
 	}
 
-	log.Println("[Info] Loaded configuration file")
+	log.Println("[info] Loaded configuration file")
 
 	// nats
 	nc, _ := nats.Connect(nats.DefaultURL)
 	js, _ := nc.JetStream()
 
-	log.Println("[Info] Connect nats-server: " + nats.DefaultURL)
+	log.Println("[info] Connect nats-server: " + nats.DefaultURL)
 
 	js.QueueSubscribe(os.Getenv("NATS_SUBJ"), os.Getenv("NATS_QUEUE"), func(msg *nats.Msg) {
 		// date
@@ -42,12 +42,15 @@ func main() {
 		// os
 		f, err := os.OpenFile(os.Getenv("LOG_PATH")+"/decrypt."+currentDate+".log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			log.Fatalf(err.Error())
+			panic("[os open file] " + err.Error())
 		}
 
 		// json
 		var records [][]interface{}
-		json.Unmarshal(msg.Data, &records)
+		unmarshalErr := json.Unmarshal(msg.Data, &records)
+		if unmarshalErr != nil {
+			panic("[json unmarshal] " + unmarshalErr.Error() + ", string: " + string(msg.Data))
+		}
 
 		for _, record := range records {
 			log := record[1].(map[string]interface{})

@@ -26,32 +26,32 @@ type Log struct {
 func main() {
 	args := os.Args[1:]
 	if len(args) == 0 {
-		log.Fatalf("[Error] Not setting conf file")
+		panic("[os args] not setting conf file")
 	}
 
 	// load env
 	err := godotenv.Load(args[0])
 
 	if err != nil {
-		log.Fatalf("[Error] Error loading .env file")
+		panic("[godotenv load] " + err.Error())
 	}
 
-	log.Println("[Info] Loaded configuration file")
+	log.Println("[info] Loaded configuration file")
 
 	// listen
 	listener, err := net.Listen("tcp", os.Getenv("HOST")+":"+os.Getenv("POST"))
 	if err != nil {
-		log.Fatalf(err.Error())
+		panic("[nat listen] " + err.Error())
 	}
 	defer listener.Close()
 
-	log.Println("[Info] Listening on " + os.Getenv("HOST") + ":" + os.Getenv("POST"))
-	log.Println("[Info] Log path " + os.Getenv("LOG_PATH"))
+	log.Println("[info] Listening on " + os.Getenv("HOST") + ":" + os.Getenv("POST"))
+	log.Println("[info] Log path " + os.Getenv("LOG_PATH"))
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Fatalf(err.Error())
+			panic("[listener accept] " + err.Error())
 		}
 
 		go handleRequest(conn)
@@ -61,11 +61,24 @@ func main() {
 }
 
 func handleRequest(conn net.Conn) {
+	// recover
+	defer func() {
+		r := recover()
+		if r != nil {
+			log.Println("[Recover]", r)
+		}
+
+		// response
+		conn.Write([]byte("err"))
+
+		conn.Close()
+	}()
+
 	buf := make([]byte, 4096)
 
 	reqLen, err := conn.Read(buf)
 	if err != nil {
-		log.Fatalf(err.Error())
+		panic("[conn read] " + err.Error())
 	}
 
 	text := buf[1:reqLen]
@@ -87,28 +100,27 @@ func handleRequest(conn net.Conn) {
 	// machine id
 	mId, err := machineid.ID()
 	if err != nil {
-		log.Fatalf(err.Error())
+		panic("[machine id] " + err.Error())
 	}
 
 	if reqLen != 0 {
 		// os
 		f, err := os.OpenFile(os.Getenv("LOG_PATH")+"/"+prefixName+"."+currentDate+".log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			log.Fatalf(err.Error())
+			panic("[open file] " + err.Error())
 		}
 
 		// add machine_id
-		log.Println(string(text))
 		var jsonData map[string]interface{}
 		unmarshalErr := json.Unmarshal(text, &jsonData)
 		if unmarshalErr != nil {
-			log.Fatalf(unmarshalErr.Error())
+			panic("[json unmarshal] " + unmarshalErr.Error() + ", string: " + string(text))
 		}
 		jsonData["machine_id"] = mId
 
 		wText, err := json.Marshal(jsonData)
 		if err != nil {
-			log.Fatalf(err.Error())
+			panic("[json marshal] " + err.Error())
 		}
 
 		if encrypt {
@@ -140,7 +152,7 @@ func archiveExpiredFiles() {
 
 	files, err := ioutil.ReadDir(os.Getenv("LOG_PATH"))
 	if err != nil {
-		log.Fatal(err)
+		panic("[ioutil read dir] " + err.Error())
 	}
 
 	for _, file := range files {
@@ -160,7 +172,7 @@ func archiveExpiredFiles() {
 				if intDate-intExpiryDate < 0 {
 					os.Remove(os.Getenv("LOG_PATH") + "/" + fileName)
 
-					log.Println("[Info] remove " + fileName)
+					log.Println("[info] remove " + fileName)
 				}
 			}
 		}

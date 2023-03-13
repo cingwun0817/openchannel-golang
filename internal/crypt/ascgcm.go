@@ -8,12 +8,12 @@ import (
 func Encrypt(plaintext, key []byte) []byte {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err.Error())
+		panic("[aes new cipher] " + err.Error())
 	}
 
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
-		panic(err.Error())
+		panic("[cipher new gcm] " + err.Error())
 	}
 
 	nonce := make([]byte, 12)
@@ -25,18 +25,18 @@ func Encrypt(plaintext, key []byte) []byte {
 func Decrypt(ciphertext, key []byte) []byte {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err.Error())
+		panic("[aes new cipher] " + err.Error())
 	}
 
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
-		panic(err.Error())
+		panic("[cipher new gcm] " + err.Error())
 	}
 
 	nonce := make([]byte, 12)
 	plaintext, err := aesgcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		panic(err.Error())
+		panic("[aesgcm open] " + err.Error())
 	}
 
 	return plaintext
