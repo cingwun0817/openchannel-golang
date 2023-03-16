@@ -74,7 +74,7 @@ func handleRequest(conn net.Conn) {
 		conn.Close()
 	}()
 
-	buf := make([]byte, 4096)
+	buf := make([]byte, 65536)
 
 	reqLen, err := conn.Read(buf)
 	if err != nil {
