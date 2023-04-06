@@ -39,6 +39,16 @@ func main() {
 		// key
 		key, _ := hex.DecodeString(generate.GetKey(currentDate))
 
+		// recover
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("[Recover]", r, ", key: ", key)
+			}
+
+			msg.Ack()
+		}()
+
 		// os
 		f, err := os.OpenFile(os.Getenv("LOG_PATH")+"/decrypt."+currentDate+".log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {

@@ -61,11 +61,17 @@ func main() {
 }
 
 func handleRequest(conn net.Conn) {
+	// date
+	currentDate := time.Now().Format("20060102")
+
+	// key
+	key, _ := hex.DecodeString(generate.GetKey(currentDate))
+
 	// recover
 	defer func() {
 		r := recover()
 		if r != nil {
-			log.Println("[Recover]", r)
+			log.Println("[Recover]", r, ", key: ", key)
 		}
 
 		// response
@@ -90,12 +96,6 @@ func handleRequest(conn net.Conn) {
 		prefixName = "enedge"
 		encrypt = true
 	}
-
-	// date
-	currentDate := time.Now().Format("20060102")
-
-	// key
-	key, _ := hex.DecodeString(generate.GetKey(currentDate))
 
 	// machine id
 	mId, err := machineid.ID()
