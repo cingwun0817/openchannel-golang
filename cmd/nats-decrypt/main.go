@@ -54,6 +54,7 @@ func main() {
 		if err != nil {
 			panic("[os open file] " + err.Error())
 		}
+		defer f.Close()
 
 		// json
 		var records [][]interface{}
@@ -73,7 +74,6 @@ func main() {
 			f.WriteString(string(plainText) + " \n")
 		}
 
-		f.Close()
 		msg.Ack()
 	})
 
