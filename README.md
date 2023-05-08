@@ -71,3 +71,27 @@ Stream Name: LOG
 Subjects: encrypt.>
 Message TTL: 1d
 ```
+
+## Prometheus API
+
+#### Build
+
+(Linux/AMD64)
+```
+GOOS=linux GOARCH=amd64 go build -o bin/prometheus-api cmd/prometheus-api/main.go
+```
+
+#### Runtime
+
+```
+[Unit]
+Description=Prometheus API
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/prometheus-api/bin/prometheus-api /opt/prometheus-api/prometheus-api.conf
+
+[Install]
+WantedBy=multi-user.target
+```
