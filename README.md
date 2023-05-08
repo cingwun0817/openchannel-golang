@@ -69,4 +69,5 @@ WantedBy=multi-user.target
 ```
 Stream Name: LOG
 Subjects: encrypt.>
+Message TTL: 1d
 ```
