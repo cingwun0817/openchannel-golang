@@ -23,6 +23,8 @@ func main() {
 	defer session.Close()
 
 	today := time.Now()
+	fmt.Printf("Run time: %s\n", today.Format("2006-01-02 15:04:05"))
+
 	storeIds := getStoreIds(session)
 	for _, storeId := range storeIds {
 		for d := 0; d < day; d++ {
@@ -36,7 +38,7 @@ func main() {
 
 			batchInsert(session, peopleStat)
 
-			log.Println(storeId, date.Format("2006-01-02"), len(peopleStat))
+			fmt.Printf("store_id: %d, date: %s, total: %d\n", storeId, date.Format("2006-01-02"), len(peopleStat))
 		}
 	}
 }

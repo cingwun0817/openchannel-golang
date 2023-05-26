@@ -95,3 +95,10 @@ ExecStart=/opt/prometheus-api/bin/prometheus-api /opt/prometheus-api/prometheus-
 [Install]
 WantedBy=multi-user.target
 ```
+
+## People hour analyze
+
+(Linux/AMD64)
+```
+GOOS=linux GOARCH=amd64 go build -o bin/people-hour-analyze cmd/people-hour-analyze/main.go
+```
