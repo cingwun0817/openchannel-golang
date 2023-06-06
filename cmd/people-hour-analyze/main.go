@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -15,6 +16,8 @@ func main() {
 
 	cluster.Keyspace = "oc"
 	cluster.Consistency = gocql.Quorum
+	cluster.ProtoVersion = 4
+	cluster.Timeout = 10 * time.Second
 
 	session, err := cluster.CreateSession()
 	if err != nil {
@@ -22,31 +25,33 @@ func main() {
 	}
 	defer session.Close()
 
+	ctx := context.Background()
+
 	today := time.Now()
 	fmt.Printf("Run time: %s\n", today.Format("2006-01-02 15:04:05"))
 
-	storeIds := getStoreIds(session)
+	storeIds := getStoreIds(ctx, session)
 	for _, storeId := range storeIds {
 		for d := 0; d < day; d++ {
 			date := today.AddDate(0, 0, 0-d)
 
-			eventStat := handleEvent(session, storeId, date.Format("2006-01-02"))
-			otsStat := handleOts(session, storeId, date.Format("2006-01-02"))
-			playStat := handlePlay(session, storeId, date.Format("2006-01-02"))
+			eventStat := handleEvent(ctx, session, storeId, date.Format("2006-01-02"))
+			otsStat := handleOts(ctx, session, storeId, date.Format("2006-01-02"))
+			playStat := handlePlay(ctx, session, storeId, date.Format("2006-01-02"))
 
 			peopleStat := merge(storeId, date.Format("2006-01-02"), eventStat, otsStat, playStat)
 
-			batchInsert(session, peopleStat)
+			batchInsert(ctx, session, peopleStat)
 
 			fmt.Printf("store_id: %s, date: %s, total: %d\n", storeId, date.Format("2006-01-02"), len(peopleStat))
 		}
 	}
 }
 
-func getStoreIds(session *gocql.Session) []string {
+func getStoreIds(ctx context.Context, session *gocql.Session) []string {
 	var store_ids []string
 
-	scanner := session.Query("SELECT store_id FROM oc.quividi_finish GROUP BY store_id").Iter().Scanner()
+	scanner := session.Query("SELECT store_id FROM oc.quividi_finish GROUP BY store_id").WithContext(ctx).Iter().Scanner()
 	for scanner.Next() {
 		var store_id string
 		err := scanner.Scan(&store_id)
@@ -74,10 +79,10 @@ type EventStat struct {
 	Attention         float64
 }
 
-func handleEvent(session *gocql.Session, pStoreId string, pDate string) map[string]*EventStat {
+func handleEvent(ctx context.Context, session *gocql.Session, pStoreId string, pDate string) map[string]*EventStat {
 	stat := make(map[string]*EventStat)
 
-	scanner := session.Query("SELECT store_id, date, hour, media_id, age, attention, gender FROM oc.quividi_event WHERE store_id = ? AND date = ?", pStoreId, pDate).Iter().Scanner()
+	scanner := session.Query("SELECT store_id, date, hour, media_id, age, attention, gender FROM oc.quividi_event WHERE store_id = ? AND date = ?", pStoreId, pDate).WithContext(ctx).Iter().Scanner()
 	for scanner.Next() {
 		var store_id, media_id string
 		var age, gender int
@@ -136,10 +141,10 @@ type OtsStat struct {
 	CountView int
 }
 
-func handleOts(session *gocql.Session, pStoreId string, pDate string) map[string]*OtsStat {
+func handleOts(ctx context.Context, session *gocql.Session, pStoreId string, pDate string) map[string]*OtsStat {
 	stat := make(map[string]*OtsStat)
 
-	scanner := session.Query("SELECT store_id, date, hour, media_id, count FROM oc.quividi_ots WHERE store_id = ? AND date = ?", pStoreId, pDate).Iter().Scanner()
+	scanner := session.Query("SELECT store_id, date, hour, media_id, count FROM oc.quividi_ots WHERE store_id = ? AND date = ?", pStoreId, pDate).WithContext(ctx).Iter().Scanner()
 	for scanner.Next() {
 		var store_id, media_id string
 		var count int
@@ -171,10 +176,10 @@ type PlayStat struct {
 	MediaId   string
 }
 
-func handlePlay(session *gocql.Session, pStoreId string, pDate string) map[string]*PlayStat {
+func handlePlay(ctx context.Context, session *gocql.Session, pStoreId string, pDate string) map[string]*PlayStat {
 	stat := make(map[string]*PlayStat)
 
-	scanner := session.Query("SELECT store_id, date, hour, media_id, count FROM oc.quividi_playcnt WHERE store_id = ? AND date = ?", pStoreId, pDate).Iter().Scanner()
+	scanner := session.Query("SELECT store_id, date, hour, media_id, count FROM oc.quividi_playcnt WHERE store_id = ? AND date = ?", pStoreId, pDate).WithContext(ctx).Iter().Scanner()
 	for scanner.Next() {
 		var store_id, media_id string
 		var count int
@@ -264,8 +269,8 @@ func merge(pStoreId string, pDate string, eventStat map[string]*EventStat, otsSt
 	return stat
 }
 
-func batchInsert(session *gocql.Session, peopleStat []PeopleStat) {
-	batch := session.NewBatch(gocql.UnloggedBatch)
+func batchInsert(ctx context.Context, session *gocql.Session, peopleStat []PeopleStat) {
+	batch := session.NewBatch(gocql.UnloggedBatch).WithContext(ctx)
 
 	for _, stat := range peopleStat {
 		batch.Entries = append(batch.Entries, gocql.BatchEntry{
