@@ -11,7 +11,7 @@ import (
 var day int = 2
 
 func main() {
-	cluster := gocql.NewCluster("172.16.51.118")
+	cluster := gocql.NewCluster("172.16.51.118", "172.16.51.120", "172.16.51.121")
 
 	cluster.Keyspace = "oc"
 	cluster.Consistency = gocql.Quorum
@@ -38,17 +38,17 @@ func main() {
 
 			batchInsert(session, peopleStat)
 
-			fmt.Printf("store_id: %d, date: %s, total: %d\n", storeId, date.Format("2006-01-02"), len(peopleStat))
+			fmt.Printf("store_id: %s, date: %s, total: %d\n", storeId, date.Format("2006-01-02"), len(peopleStat))
 		}
 	}
 }
 
-func getStoreIds(session *gocql.Session) []int {
-	var store_ids []int
+func getStoreIds(session *gocql.Session) []string {
+	var store_ids []string
 
 	scanner := session.Query("SELECT store_id FROM oc.quividi_finish GROUP BY store_id").Iter().Scanner()
 	for scanner.Next() {
-		var store_id int
+		var store_id string
 		err := scanner.Scan(&store_id)
 		if err != nil {
 			log.Fatal(err)
@@ -71,14 +71,16 @@ type EventStat struct {
 	CountFemaleAdult  int
 	CountFemaleSenior int
 	CountUnknown      int
+	Attention         float64
 }
 
-func handleEvent(session *gocql.Session, pStoreId int, pDate string) map[string]*EventStat {
+func handleEvent(session *gocql.Session, pStoreId string, pDate string) map[string]*EventStat {
 	stat := make(map[string]*EventStat)
 
 	scanner := session.Query("SELECT store_id, date, hour, media_id, age, attention, gender FROM oc.quividi_event WHERE store_id = ? AND date = ?", pStoreId, pDate).Iter().Scanner()
 	for scanner.Next() {
-		var store_id, media_id, age, gender int
+		var store_id, media_id string
+		var age, gender int
 		var date string
 		var hour float32
 		var attention float64
@@ -88,13 +90,11 @@ func handleEvent(session *gocql.Session, pStoreId int, pDate string) map[string]
 			log.Fatal(err)
 		}
 
-		key := fmt.Sprintf("%d.%s.%g.%d", store_id, date, hour, media_id)
+		key := fmt.Sprintf("%s.%s.%g.%s", store_id, date, hour, media_id)
 		_, exist := stat[key]
 		if !exist {
 			stat[key] = &EventStat{}
 		}
-
-		stat[key].CountAttention++
 
 		if gender == 0 || age == 0 {
 			stat[key].CountUnknown++
@@ -122,6 +122,10 @@ func handleEvent(session *gocql.Session, pStoreId int, pDate string) map[string]
 					stat[key].CountFemaleSenior++
 				}
 			}
+
+			// only not unknown target can compute attention (date: 20230606 <leo.wang>)
+			stat[key].Attention += attention
+			stat[key].CountAttention++
 		}
 	}
 
@@ -132,12 +136,13 @@ type OtsStat struct {
 	CountView int
 }
 
-func handleOts(session *gocql.Session, pStoreId int, pDate string) map[string]*OtsStat {
+func handleOts(session *gocql.Session, pStoreId string, pDate string) map[string]*OtsStat {
 	stat := make(map[string]*OtsStat)
 
 	scanner := session.Query("SELECT store_id, date, hour, media_id, count FROM oc.quividi_ots WHERE store_id = ? AND date = ?", pStoreId, pDate).Iter().Scanner()
 	for scanner.Next() {
-		var store_id, media_id, count int
+		var store_id, media_id string
+		var count int
 		var date string
 		var hour float32
 
@@ -146,7 +151,7 @@ func handleOts(session *gocql.Session, pStoreId int, pDate string) map[string]*O
 			log.Fatal(err)
 		}
 
-		key := fmt.Sprintf("%d.%s.%g.%d", store_id, date, hour, media_id)
+		key := fmt.Sprintf("%s.%s.%g.%s", store_id, date, hour, media_id)
 		_, exist := stat[key]
 		if !exist {
 			stat[key] = &OtsStat{}
@@ -160,18 +165,19 @@ func handleOts(session *gocql.Session, pStoreId int, pDate string) map[string]*O
 
 type PlayStat struct {
 	CountView int
-	StoreId   int
+	StoreId   string
 	Date      string
 	Hour      float32
-	MediaId   int
+	MediaId   string
 }
 
-func handlePlay(session *gocql.Session, pStoreId int, pDate string) map[string]*PlayStat {
+func handlePlay(session *gocql.Session, pStoreId string, pDate string) map[string]*PlayStat {
 	stat := make(map[string]*PlayStat)
 
 	scanner := session.Query("SELECT store_id, date, hour, media_id, count FROM oc.quividi_playcnt WHERE store_id = ? AND date = ?", pStoreId, pDate).Iter().Scanner()
 	for scanner.Next() {
-		var store_id, media_id, count int
+		var store_id, media_id string
+		var count int
 		var date string
 		var hour float32
 
@@ -180,7 +186,7 @@ func handlePlay(session *gocql.Session, pStoreId int, pDate string) map[string]*
 			log.Fatal(err)
 		}
 
-		key := fmt.Sprintf("%d.%s.%g.%d", store_id, date, hour, media_id)
+		key := fmt.Sprintf("%s.%s.%g.%s", store_id, date, hour, media_id)
 		_, exist := stat[key]
 		if !exist {
 			stat[key] = &PlayStat{}
@@ -197,13 +203,14 @@ func handlePlay(session *gocql.Session, pStoreId int, pDate string) map[string]*
 }
 
 type PeopleStat struct {
-	StoreId           int
+	StoreId           string
 	Date              string
 	Hour              float32
-	MediaId           int
+	MediaId           string
 	CountPlay         int
 	CountPeople       int
 	Impression        int
+	Attention         float64
 	CountMale         int
 	CountMaleChild    int
 	CountMaleYoung    int
@@ -217,7 +224,7 @@ type PeopleStat struct {
 	CountUnknown      int
 }
 
-func merge(pStoreId int, pDate string, eventStat map[string]*EventStat, otsStat map[string]*OtsStat, play map[string]*PlayStat) []PeopleStat {
+func merge(pStoreId string, pDate string, eventStat map[string]*EventStat, otsStat map[string]*OtsStat, play map[string]*PlayStat) []PeopleStat {
 	stat := []PeopleStat{}
 
 	for k, v := range play {
@@ -232,6 +239,7 @@ func merge(pStoreId int, pDate string, eventStat map[string]*EventStat, otsStat 
 		_, existEvent := eventStat[k]
 		if existEvent {
 			rowStat.Impression = eventStat[k].CountAttention
+			rowStat.Attention = eventStat[k].Attention
 			rowStat.CountMale = eventStat[k].CountMaleChild + eventStat[k].CountMaleYoung + eventStat[k].CountMaleAdult + eventStat[k].CountMaleSenior
 			rowStat.CountMaleChild = eventStat[k].CountMaleChild
 			rowStat.CountMaleYoung = eventStat[k].CountMaleYoung
@@ -261,8 +269,8 @@ func batchInsert(session *gocql.Session, peopleStat []PeopleStat) {
 
 	for _, stat := range peopleStat {
 		batch.Entries = append(batch.Entries, gocql.BatchEntry{
-			Stmt:       "INSERT INTO oc.quividi_people_hour_analyze (date, hour, store_id, media_id, play_count, people_count, impression, male, male_child, male_young, male_adult, male_senior, female, female_child, female_young, female_adult, female_senior, unknown) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-			Args:       []interface{}{stat.Date, stat.Hour, stat.StoreId, stat.MediaId, stat.CountPlay, stat.CountPeople, stat.Impression, stat.CountMale, stat.CountMaleChild, stat.CountMaleYoung, stat.CountMaleAdult, stat.CountMaleSenior, stat.CountFemale, stat.CountFemaleChild, stat.CountFemaleYoung, stat.CountFemaleAdult, stat.CountFemaleSenior, stat.CountUnknown},
+			Stmt:       "INSERT INTO oc.quividi_people_hour_analyze (date, hour, store_id, media_id, play_count, people_count, impression, male, male_child, male_young, male_adult, male_senior, female, female_child, female_young, female_adult, female_senior, unknown, attention) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			Args:       []interface{}{stat.Date, stat.Hour, stat.StoreId, stat.MediaId, stat.CountPlay, stat.CountPeople, stat.Impression, stat.CountMale, stat.CountMaleChild, stat.CountMaleYoung, stat.CountMaleAdult, stat.CountMaleSenior, stat.CountFemale, stat.CountFemaleChild, stat.CountFemaleYoung, stat.CountFemaleAdult, stat.CountFemaleSenior, stat.CountUnknown, stat.Attention},
 			Idempotent: true,
 		})
 	}
