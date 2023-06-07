@@ -98,7 +98,18 @@ WantedBy=multi-user.target
 
 ## People hour analyze
 
+#### Build
+
 (Linux/AMD64)
 ```
 GOOS=linux GOARCH=amd64 go build -o bin/people-hour-analyze cmd/people-hour-analyze/main.go
+```
+
+## Scylla API
+
+#### Build
+
+(Linux/AMD64)
+```
+GOOS=linux GOARCH=amd64 go build -o bin/scylla-api cmd/scylla-api/main.go
 ```
