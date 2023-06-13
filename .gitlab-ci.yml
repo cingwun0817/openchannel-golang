@@ -5,7 +5,8 @@ build-scylla-api:
   stage: build
   tags: [oc]
   script:
-    - pwd
+    - GOOS=linux GOARCH=amd64 go build -o bin/scylla-api cmd/scylla-api/main.go
+    - ll bin/
   only:
     refs:
       - main
