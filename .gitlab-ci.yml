@@ -37,7 +37,7 @@ deploy-prometheus-api:
     - GOOS=linux GOARCH=amd64 go build -o bin/prometheus-api cmd/prometheus-api/main.go
   only:
     refs:
-      - main
+      - release
     changes:
       - "cmd/prometheus-api/main.go"
   environment:
