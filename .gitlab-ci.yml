@@ -1,0 +1,12 @@
+stages:
+  - word
+
+deploy_stage:
+  stage: word
+  tags: [oc]
+  script:
+    - pwd
+  only:
+    - main
+  environment:
+    name: stage
