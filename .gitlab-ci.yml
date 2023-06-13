@@ -10,9 +10,9 @@ deploy-scylla-api:
     - ssh deployer@172.16.51.118 "mv /home/deployer/scylla-api /opt/scylla-api/bin/ && sudo systemctl restart scylla-api.service"
   only:
     refs:
-      - main
-    # changes:
-    #   - "cmd/scylla-api/main.go"
+      - release
+    changes:
+      - "cmd/scylla-api/main.go"
   environment:
     name: production
 
@@ -24,9 +24,9 @@ deploy-people-hour-analyze-api:
     - scp bin/people-hour-analyze deployer@172.16.51.118:/opt/analyze/bin
   only:
     refs:
-      - main
-    # changes:
-    #   - "cmd/people-hour-analyze/main.go"
+      - release
+    changes:
+      - "cmd/people-hour-analyze/main.go"
   environment:
     name: production
 
