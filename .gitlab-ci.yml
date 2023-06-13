@@ -12,7 +12,27 @@ deploy_stage:
   environment:
     name: stage
 
+deploy_stage_a:
+  stage: test_1
+  tags: [oc]
+  script:
+    - echo "456"
+  only:
+    - main
+  environment:
+    name: stage
+
 deploy_stage_1:
+  stage: word
+  tags: [oc]
+  script:
+    - pwd
+  only:
+    - main
+  environment:
+    name: stage
+
+deploy_stage_1_a:
   stage: test_1
   tags: [oc]
   script:
