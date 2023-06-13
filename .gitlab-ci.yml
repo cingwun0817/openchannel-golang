@@ -6,7 +6,7 @@ deploy-scylla-api:
   tags: [oc]
   script:
     - GOOS=linux GOARCH=amd64 go build -o bin/scylla-api cmd/scylla-api/main.go
-    - scp bin/scylla-api deployer@172.16.51.118:/home/deployer
+    - scp bin/scylla-api deployer@172.16.51.118:/opt/scylla-api/bin
   only:
     refs:
       - main
