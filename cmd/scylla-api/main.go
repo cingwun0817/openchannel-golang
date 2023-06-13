@@ -37,7 +37,7 @@ type Result struct {
 func main() {
 	args := os.Args[1:]
 	if len(args) == 0 {
-		panic("[os args] not setting conf file")
+		panic("[os args] not setting conf file A")
 	}
 
 	// load env
