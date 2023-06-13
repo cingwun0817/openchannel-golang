@@ -6,13 +6,13 @@ deploy-scylla-api:
   tags: [oc]
   script:
     - GOOS=linux GOARCH=amd64 go build -o bin/scylla-api cmd/scylla-api/main.go
-    - scp bin/scylla-api deployer@172.16.51.118:/opt/scylla-api/bin
+    - scp bin/scylla-api deployer@172.16.51.118:/home/deployer && mv /home/deployer/scylla-api /opt/scylla-api/bin/
     - ssh deployer@172.16.51.118 "sudo systemctl restart scylla-api.service"
   only:
     refs:
       - main
-    changes:
-      - "cmd/scylla-api/main.go"
+    # changes:
+    #   - "cmd/scylla-api/main.go"
   environment:
     name: production
 
