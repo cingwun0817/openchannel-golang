@@ -47,7 +47,7 @@ func main() {
 		panic("[godotenv load] " + err.Error())
 	}
 
-	log.Println("[info] Loaded configuration file Leoooooo")
+	log.Println("[info] Loaded configuration file")
 
 	r := mux.NewRouter()
 
