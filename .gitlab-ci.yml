@@ -11,8 +11,22 @@ deploy-scylla-api:
   only:
     refs:
       - main
-    changes:
-      - "cmd/scylla-api/main.go"
+    # changes:
+    #   - "cmd/scylla-api/main.go"
+  environment:
+    name: production
+
+deploy-people-hour-analyze-api:
+  stage: deploy
+  tags: [oc]
+  script:
+    - GOOS=linux GOARCH=amd64 go build -o bin/people-hour-analyze cmd/people-hour-analyze/main.go
+    - scp bin/people-hour-analyze deployer@172.16.51.118:/opt/analyze/bin
+  only:
+    refs:
+      - main
+    # changes:
+    #   - "cmd/people-hour-analyze/main.go"
   environment:
     name: production
 
@@ -26,18 +40,5 @@ deploy-prometheus-api:
       - main
     changes:
       - "cmd/prometheus-api/main.go"
-  environment:
-    name: production
-
-deploy-people-hour-analyze-api:
-  stage: deploy
-  tags: [oc]
-  script:
-    - GOOS=linux GOARCH=amd64 go build -o bin/people-hour-analyze cmd/people-hour-analyze/main.go
-  only:
-    refs:
-      - main
-    changes:
-      - "cmd/people-hour-analyze/main.go"
   environment:
     name: production
