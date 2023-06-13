@@ -22,6 +22,7 @@ deploy_stage_a:
   environment:
     name: stage
 
+---
 deploy_stage_1:
   stage: word
   tags: [oc]
