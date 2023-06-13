@@ -1,24 +1,42 @@
 stages:
-  - build
   - deploy
-
-build-scylla-api:
-  stage: build
-  tags: [oc]
-  script:
-    - GOOS=linux GOARCH=amd64 go build -o bin/scylla-api cmd/scylla-api/main.go
-    - GOOS=linux GOARCH=amd64 go build -o bin/prometheus-api cmd/prometheus-api/main.go
-    - GOOS=linux GOARCH=amd64 go build -o bin/people-hour-analyze cmd/people-hour-analyze/main.go
 
 deploy-scylla-api:
   stage: deploy
   tags: [oc]
   script:
+    - GOOS=linux GOARCH=amd64 go build -o bin/scylla-api cmd/scylla-api/main.go
     - scp bin/scylla-api deployer@172.16.51.118:/home/deployer
   only:
     refs:
       - main
     changes:
       - "cmd/scylla-api/main.go"
+  environment:
+    name: production
+
+deploy-prometheus-api:
+  stage: deploy
+  tags: [oc]
+  script:
+    - GOOS=linux GOARCH=amd64 go build -o bin/prometheus-api cmd/prometheus-api/main.go
+  only:
+    refs:
+      - main
+    changes:
+      - "cmd/prometheus-api/main.go"
+  environment:
+    name: production
+
+deploy-people-hour-analyze-api:
+  stage: deploy
+  tags: [oc]
+  script:
+    - GOOS=linux GOARCH=amd64 go build -o bin/people-hour-analyze cmd/people-hour-analyze/main.go
+  only:
+    refs:
+      - main
+    changes:
+      - "cmd/people-hour-analyze/main.go"
   environment:
     name: production
