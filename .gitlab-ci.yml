@@ -7,6 +7,7 @@ deploy-scylla-api:
   script:
     - GOOS=linux GOARCH=amd64 go build -o bin/scylla-api cmd/scylla-api/main.go
     - scp bin/scylla-api deployer@172.16.51.118:/opt/scylla-api/bin
+    - ssh deployer@172.16.51.118 "systemctl restart scylla-api.service"
   only:
     refs:
       - main
