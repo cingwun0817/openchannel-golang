@@ -1,44 +1,15 @@
 stages:
-  - word
-  - test_1
+  - build
 
-deploy_stage:
-  stage: word
+build-scylla-api:
+  stage: build
   tags: [oc]
   script:
     - pwd
   only:
-    - main
+    refs:
+      - main
+    changes:
+      - "cmd/scylla-api/main.go"
   environment:
-    name: stage
-
-deploy_stage_a:
-  stage: test_1
-  tags: [oc]
-  script:
-    - echo "456"
-  only:
-    - main
-  environment:
-    name: stage
-
----
-deploy_stage_1:
-  stage: word
-  tags: [oc]
-  script:
-    - pwd
-  only:
-    - main
-  environment:
-    name: stage
-
-deploy_stage_1_a:
-  stage: test_1
-  tags: [oc]
-  script:
-    - echo "123"
-  only:
-    - main
-  environment:
-    name: stage
+    name: production
