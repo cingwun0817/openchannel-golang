@@ -28,6 +28,8 @@ func main() {
 	ctx := context.Background()
 
 	today := time.Now()
+	fmt.Printf("Run time: %s\n", today.Format("2006-01-02 15:04:05"))
+
 	storeIds := getStoreIds(ctx, session)
 	for _, storeId := range storeIds {
 		for _, day := range days {
