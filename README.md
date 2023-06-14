@@ -113,3 +113,12 @@ GOOS=linux GOARCH=amd64 go build -o bin/people-hour-analyze cmd/people-hour-anal
 ```
 GOOS=linux GOARCH=amd64 go build -o bin/scylla-api cmd/scylla-api/main.go
 ```
+
+## Target Audience Store Analyze
+
+#### Build
+
+(Linux/AMD64)
+```
+GOOS=linux GOARCH=amd64 go build -o bin/ta-store-analyze cmd/ta-store-analyze/main.go
+```
