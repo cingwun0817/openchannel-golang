@@ -16,7 +16,7 @@ deploy-scylla-api:
   environment:
     name: production
 
-deploy-people-hour-analyze-api:
+deploy-people-hour-analyze:
   stage: deploy
   tags: [oc]
   script:
@@ -27,6 +27,20 @@ deploy-people-hour-analyze-api:
       - release
     changes:
       - "cmd/people-hour-analyze/main.go"
+  environment:
+    name: production
+
+deploy-ta-store-analyze:
+  stage: deploy
+  tags: [oc]
+  script:
+    - GOOS=linux GOARCH=amd64 go build -o bin/ta-store-analyze cmd/ta-store-analyze/main.go
+    - scp bin/ta-store-analyze deployer@172.16.51.118:/opt/analyze/bin
+  only:
+    refs:
+      - release
+    changes:
+      - "cmd/ta-store-analyze/main.go"
   environment:
     name: production
 
