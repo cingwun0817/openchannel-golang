@@ -43,7 +43,7 @@ func main() {
 
 			batchInsert(ctx, session, peopleStat)
 
-			fmt.Printf("store_id: %s, date: %s, total: %d\n", storeId, date.Format("2006-01-02"), len(peopleStat))
+			fmt.Printf("store_id: %s \t date: %s \t total: %d\n", storeId, date.Format("2006-01-02"), len(peopleStat))
 		}
 	}
 }

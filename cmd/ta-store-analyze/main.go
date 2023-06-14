@@ -78,7 +78,7 @@ func main() {
 				log.Fatal(err)
 			}
 
-			fmt.Printf("store_id: %s, day: %d, date_range: %s - %s\n", storeId, day, startDate.Format("2006-01-02"), today.Format("2006-01-02"))
+			fmt.Printf("store_id: %s \t day: %d \t date_range: %s - %s\n", storeId, day, startDate.Format("2006-01-02"), today.Format("2006-01-02"))
 		}
 	}
 }
