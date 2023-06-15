@@ -42,7 +42,7 @@ func main() {
 			}
 
 			err := session.Query(
-				"INSERT INTO oc.ta_store_analyze (store_id, day, female, male, child, young, adult, senior, female_child, female_young, female_adult, female_senior, male_child, male_young, male_adult, male_senior, female_rate, male_rate, child_rate, young_rate, adult_rate, senior_rate, female_child_rate, female_young_rate, female_adult_rate, female_senior_rate, male_child_rate, male_young_rate, male_adult_rate, male_senior_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+				"INSERT INTO oc.ta_store_analyze (store_id, day, female, male, child, young, adult, senior, female_child, female_young, female_adult, female_senior, male_child, male_young, male_adult, male_senior, female_rate, male_rate, child_rate, young_rate, adult_rate, senior_rate, female_child_rate, female_young_rate, female_adult_rate, female_senior_rate, male_child_rate, male_young_rate, male_adult_rate, male_senior_rate, play_count, people_count, impression) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 				ta.StoreId,
 				day,
 				ta.Female,
@@ -73,6 +73,9 @@ func main() {
 				ta.MaleYoungRate,
 				ta.MaleAdultRate,
 				ta.MaleSeniorRate,
+				ta.PlayCount,
+				ta.PeopleCount,
+				ta.Impression,
 			).WithContext(ctx).Exec()
 			if err != nil {
 				log.Fatal(err)
@@ -130,18 +133,21 @@ type Target struct {
 	MaleYoungRate    float64
 	MaleAdultRate    float64
 	MaleSeniorRate   float64
+	PlayCount        int
+	PeopleCount      int
+	Impression       int
 }
 
 func getStoreTargetAudience(ctx context.Context, session *gocql.Session, storeId string, sDate string, eDate string) Target {
 	var store_id string
-	var female, female_child, female_young, female_adult, female_senior, male, male_child, male_young, male_adult, male_senior int
+	var female, female_child, female_young, female_adult, female_senior, male, male_child, male_young, male_adult, male_senior, play_count, people_count, impression int
 
 	err := session.Query(
-		"SELECT store_id, SUM(female) as female, SUM(female_child) as female_child, SUM(female_young) as female_young, SUM(female_adult) as female_adult, SUM(female_senior) as female_senior, SUM(male) as male, SUM(male_child) as male_child, SUM(male_young) as male_young, SUM(male_adult) as male_adult, SUM(male_senior) as male_senior FROM oc.quividi_people_hour_analyze_by_store_date_hour_media WHERE store_id = ? AND date >= ? AND date <= ?",
+		"SELECT store_id, SUM(female) as female, SUM(female_child) as female_child, SUM(female_young) as female_young, SUM(female_adult) as female_adult, SUM(female_senior) as female_senior, SUM(male) as male, SUM(male_child) as male_child, SUM(male_young) as male_young, SUM(male_adult) as male_adult, SUM(male_senior) as male_senior, SUM(play_count) as play_count, SUM(people_count) as people_count, SUM(impression) as impression FROM oc.quividi_people_hour_analyze_by_store_date_hour_media WHERE store_id = ? AND date >= ? AND date <= ?",
 		storeId,
 		sDate,
 		eDate,
-	).WithContext(ctx).Scan(&store_id, &female, &female_child, &female_young, &female_adult, &female_senior, &male, &male_child, &male_young, &male_adult, &male_senior)
+	).WithContext(ctx).Scan(&store_id, &female, &female_child, &female_young, &female_adult, &female_senior, &male, &male_child, &male_young, &male_adult, &male_senior, &play_count, &people_count, &impression)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -181,6 +187,10 @@ func getStoreTargetAudience(ctx context.Context, session *gocql.Session, storeId
 		target.MaleYoungRate = float64(target.MaleYoung) / float64(total)
 		target.MaleAdultRate = float64(target.MaleAdult) / float64(total)
 		target.MaleSeniorRate = float64(target.MaleSenior) / float64(total)
+
+		target.PlayCount = play_count
+		target.PeopleCount = people_count
+		target.Impression = impression
 	}
 
 	return target
