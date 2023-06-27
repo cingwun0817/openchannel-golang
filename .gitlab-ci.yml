@@ -44,6 +44,20 @@ deploy-ta-store-analyze:
   environment:
     name: production
 
+deploy-insert-media-data:
+  stage: deploy
+  tags: [oc]
+  script:
+    - GOOS=linux GOARCH=amd64 go build -o bin/insert-media-data cmd/insert-media-data/main.go
+    - scp bin/insert-media-data deployer@172.16.51.118:/opt/analyze/bin
+  only:
+    refs:
+      - release
+    changes:
+      - "cmd/insert-media-data/main.go"
+  environment:
+    name: production
+
 deploy-prometheus-api:
   stage: deploy
   tags: [oc]
