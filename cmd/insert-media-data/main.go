@@ -45,6 +45,16 @@ func main() {
 	devContentData := getContentData("https://dcms.sp88.tw/api/ContentList/List")
 	insertMediaData(ctx, db, devContentData)
 	fmt.Printf("dev: %d \n", len(devContentData.Result))
+
+	// hient
+	hinetContentData := getContentData("https://hcms.sp88.tw/api/ContentList/List")
+	insertMediaData(ctx, db, hinetContentData)
+	fmt.Printf("dev: %d \n", len(hinetContentData.Result))
+
+	// pic
+	picContentData := getContentData("https://pcms.sp88.tw/api/ContentList/List")
+	insertMediaData(ctx, db, picContentData)
+	fmt.Printf("dev: %d \n", len(picContentData.Result))
 }
 
 func getContentData(url string) Response {
