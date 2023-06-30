@@ -64,7 +64,7 @@ deploy-prometheus-api:
   script:
     - GOOS=linux GOARCH=amd64 go build -o bin/prometheus-api cmd/prometheus-api/main.go
     - scp bin/prometheus-api deployer@172.16.51.109:/home/deployer
-    - ssh deployer@172.16.51.118 "mv /home/deployer/prometheus-api /opt/prometheus-api/bin/ && sudo systemctl restart prometheus-api.service"
+    - ssh deployer@172.16.51.109 "mv /home/deployer/prometheus-api /opt/prometheus-api/bin/ && sudo systemctl restart prometheus-api.service"
   only:
     refs:
       - main
