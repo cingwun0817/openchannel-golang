@@ -63,10 +63,10 @@ deploy-prometheus-api:
   tags: [oc]
   script:
     - GOOS=linux GOARCH=amd64 go build -o bin/prometheus-api cmd/prometheus-api/main.go
+    - scp bin/prometheus-api deployer@172.16.51.109:/opt/prometheus-api/bin
   only:
     refs:
+      - main
       - release
-    changes:
-      - "cmd/prometheus-api/main.go"
   environment:
     name: production
