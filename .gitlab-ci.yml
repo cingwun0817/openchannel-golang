@@ -78,6 +78,8 @@ deploy-prod-prometheus-api:
     - GOOS=linux GOARCH=amd64 go build -o bin/prometheus-api cmd/prometheus-api/main.go
     - scp bin/prometheus-api deployer@203.66.14.29:/home/deployer
     - ssh deployer@203.66.14.29 "mv /home/deployer/prometheus-api /opt/prometheus-api/bin/ && sudo systemctl restart prometheus-api.service"
+    - scp bin/prometheus-api deployer@10.162.2.22:/home/deployer
+    - ssh deployer@10.162.2.22 "mv /home/deployer/prometheus-api /opt/prometheus-api/bin/ && sudo systemctl restart prometheus-api.service"
   only:
     refs:
       - main
