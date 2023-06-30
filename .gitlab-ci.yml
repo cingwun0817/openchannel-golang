@@ -68,6 +68,8 @@ deploy-stage-prometheus-api:
   only:
     refs:
       - main
+    changes:
+      - "cmd/insert-media-data/main.go"
   environment:
     name: stage
 
@@ -82,6 +84,8 @@ deploy-prod-prometheus-api:
     - ssh deployer@10.162.2.22 "mv /home/deployer/prometheus-api /opt/prometheus-api/bin/ && sudo systemctl restart prometheus-api.service"
   only:
     refs:
-      - main
+      - release
+    changes:
+      - "cmd/insert-media-data/main.go"
   environment:
     name: production
