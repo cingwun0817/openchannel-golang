@@ -58,7 +58,7 @@ deploy-insert-media-data:
   environment:
     name: production
 
-deploy-prometheus-api:
+deploy-stage-prometheus-api:
   stage: deploy
   tags: [oc]
   script:
@@ -68,6 +68,18 @@ deploy-prometheus-api:
   only:
     refs:
       - main
-      - release
+  environment:
+    name: stage
+
+deploy-prod-prometheus-api:
+  stage: deploy
+  tags: [oc]
+  script:
+    - GOOS=linux GOARCH=amd64 go build -o bin/prometheus-api cmd/prometheus-api/main.go
+    - scp bin/prometheus-api deployer@203.66.14.29:/home/deployer
+    - ssh deployer@203.66.14.29 "mv /home/deployer/prometheus-api /opt/prometheus-api/bin/ && sudo systemctl restart prometheus-api.service"
+  only:
+    refs:
+      - main
   environment:
     name: production
