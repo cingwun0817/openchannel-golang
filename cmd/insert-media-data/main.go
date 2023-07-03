@@ -82,7 +82,7 @@ func insertMediaData(ctx context.Context, db *sql.DB, data Response) {
 		_, err := db.ExecContext(
 			ctx,
 			"INSERT INTO `medias` (`media_id`, `name`, `length`, `start_date`, `end_date`) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = ?, length =?, start_date = ?, end_date = ?",
-			content.ContentId,
+			content.ContentUid,
 			content.ContentName,
 			content.ContentLength,
 			content.StartDate,
