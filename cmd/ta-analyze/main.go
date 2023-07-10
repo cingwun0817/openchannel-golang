@@ -11,6 +11,15 @@ import (
 
 var days = [5]int{30, 60, 90, 180, 360}
 
+var worker = 20
+
+type Job struct {
+	StoreId   string
+	Day       int
+	StartDate string
+	EndDate   string
+}
+
 func main() {
 	cluster := gocql.NewCluster("172.16.51.118", "172.16.51.120", "172.16.51.121")
 
@@ -25,8 +34,97 @@ func main() {
 	}
 	defer session.Close()
 
-	ctx := context.Background()
+	// exec
+	jobChan := make(chan Job)
 
+	ctx, cancel := context.WithCancel(context.Background())
+	// ctx := context.Background()
+	for i := 0; i < worker; i++ {
+		go func(c chan Job, i int, ctx context.Context) {
+			for {
+				select {
+				case job := <-c:
+					// insert to store_analyze
+					taStore := getStoreTargetAudience(ctx, session, job.StoreId, job.StartDate, job.EndDate)
+
+					if job.StoreId != taStore.StoreId {
+						continue
+					}
+
+					err := session.Query(
+						"INSERT INTO oc.ta_store_analyze (store_id, day, female, male, child, young, adult, senior, female_child, female_young, female_adult, female_senior, male_child, male_young, male_adult, male_senior, play_count, people_count, impression) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+						taStore.StoreId,
+						job.Day,
+						taStore.Female,
+						taStore.Male,
+						taStore.Child,
+						taStore.Young,
+						taStore.Adult,
+						taStore.Senior,
+						taStore.FemaleChild,
+						taStore.FemaleYoung,
+						taStore.FemaleAdult,
+						taStore.FemaleSenior,
+						taStore.MaleChild,
+						taStore.MaleYoung,
+						taStore.MaleAdult,
+						taStore.MaleSenior,
+						taStore.PlayCount,
+						taStore.PeopleCount,
+						taStore.Impression,
+					).WithContext(ctx).Exec()
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					// insert to store_media_analyze
+					taStoreMedias := getStoreMediaTargetAudience(ctx, session, job.StoreId, job.StartDate, job.EndDate)
+
+					for _, taStoreMedia := range taStoreMedias {
+						if job.StoreId != taStoreMedia.StoreId {
+							continue
+						}
+						err := session.Query(
+							"INSERT INTO oc.ta_store_media_analyze (store_id, media_id, day, female, male, child, young, adult, senior, female_child, female_young, female_adult, female_senior, male_child, male_young, male_adult, male_senior, play_count, people_count, impression) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+							taStoreMedia.StoreId,
+							taStoreMedia.MediaId,
+							job.Day,
+							taStoreMedia.Female,
+							taStoreMedia.Male,
+							taStoreMedia.Child,
+							taStoreMedia.Young,
+							taStoreMedia.Adult,
+							taStoreMedia.Senior,
+							taStoreMedia.FemaleChild,
+							taStoreMedia.FemaleYoung,
+							taStoreMedia.FemaleAdult,
+							taStoreMedia.FemaleSenior,
+							taStoreMedia.MaleChild,
+							taStoreMedia.MaleYoung,
+							taStoreMedia.MaleAdult,
+							taStoreMedia.MaleSenior,
+							taStoreMedia.PlayCount,
+							taStoreMedia.PeopleCount,
+							taStoreMedia.Impression,
+						).WithContext(ctx).Exec()
+						if err != nil {
+							log.Fatal(err)
+						}
+					}
+
+					fmt.Printf("[Run] worker_id: %d\t store_id: %s\t day: %d\t date_range: %s - %s\n", i, job.StoreId, job.Day, job.StartDate, job.EndDate)
+				case <-ctx.Done():
+					fmt.Printf("[End] worker_id: %d\n", i)
+					return
+				default:
+					fmt.Printf("[Wait] worker_id %d\n", i)
+					time.Sleep(3 * time.Second)
+				}
+			}
+		}(jobChan, i, ctx)
+	}
+
+	// assign job
 	today := time.Now()
 	fmt.Printf("Run time: %s\n", today.Format("2006-01-02 15:04:05"))
 
@@ -35,77 +133,14 @@ func main() {
 		for _, day := range days {
 			startDate := today.AddDate(0, 0, 0-day)
 
-			// insert to store_analyze
-			taStore := getStoreTargetAudience(ctx, session, storeId, startDate.Format("2006-01-02"), today.Format("2006-01-02"))
-
-			if storeId != taStore.StoreId {
-				continue
-			}
-
-			err := session.Query(
-				"INSERT INTO oc.ta_store_analyze (store_id, day, female, male, child, young, adult, senior, female_child, female_young, female_adult, female_senior, male_child, male_young, male_adult, male_senior, play_count, people_count, impression) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-				taStore.StoreId,
-				day,
-				taStore.Female,
-				taStore.Male,
-				taStore.Child,
-				taStore.Young,
-				taStore.Adult,
-				taStore.Senior,
-				taStore.FemaleChild,
-				taStore.FemaleYoung,
-				taStore.FemaleAdult,
-				taStore.FemaleSenior,
-				taStore.MaleChild,
-				taStore.MaleYoung,
-				taStore.MaleAdult,
-				taStore.MaleSenior,
-				taStore.PlayCount,
-				taStore.PeopleCount,
-				taStore.Impression,
-			).WithContext(ctx).Exec()
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			// insert to store_media_analyze
-			taStoreMedias := getStoreMediaTargetAudience(ctx, session, storeId, startDate.Format("2006-01-02"), today.Format("2006-01-02"))
-
-			for _, taStoreMedia := range taStoreMedias {
-				if storeId != taStoreMedia.StoreId {
-					continue
-				}
-				err := session.Query(
-					"INSERT INTO oc.ta_store_media_analyze (store_id, media_id, day, female, male, child, young, adult, senior, female_child, female_young, female_adult, female_senior, male_child, male_young, male_adult, male_senior, play_count, people_count, impression) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-					taStoreMedia.StoreId,
-					taStoreMedia.MediaId,
-					day,
-					taStoreMedia.Female,
-					taStoreMedia.Male,
-					taStoreMedia.Child,
-					taStoreMedia.Young,
-					taStoreMedia.Adult,
-					taStoreMedia.Senior,
-					taStoreMedia.FemaleChild,
-					taStoreMedia.FemaleYoung,
-					taStoreMedia.FemaleAdult,
-					taStoreMedia.FemaleSenior,
-					taStoreMedia.MaleChild,
-					taStoreMedia.MaleYoung,
-					taStoreMedia.MaleAdult,
-					taStoreMedia.MaleSenior,
-					taStoreMedia.PlayCount,
-					taStoreMedia.PeopleCount,
-					taStoreMedia.Impression,
-				).WithContext(ctx).Exec()
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
-
-			fmt.Printf("store_id: %s \t day: %d \t date_range: %s - %s\n", storeId, day, startDate.Format("2006-01-02"), today.Format("2006-01-02"))
+			jobChan <- Job{storeId, day, startDate.Format("2006-01-02"), today.Format("2006-01-02")}
 		}
 	}
+
+	fmt.Println("Finished")
+
+	time.Sleep(15 * time.Second)
+	cancel()
 }
 
 func getStoreIds(ctx context.Context, session *gocql.Session) []string {
