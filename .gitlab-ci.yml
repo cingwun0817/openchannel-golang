@@ -30,17 +30,17 @@ deploy-people-hour-analyze:
   environment:
     name: production
 
-deploy-ta-store-analyze:
+deploy-ta-analyze:
   stage: deploy
   tags: [oc]
   script:
-    - GOOS=linux GOARCH=amd64 go build -o bin/ta-store-analyze cmd/ta-store-analyze/main.go
-    - scp bin/ta-store-analyze deployer@172.16.51.118:/opt/analyze/bin
+    - GOOS=linux GOARCH=amd64 go build -o bin/ta-analyze cmd/ta-analyze/main.go
+    - scp bin/ta-analyze deployer@172.16.51.118:/opt/analyze/bin
   only:
     refs:
       - release
     changes:
-      - "cmd/ta-store-analyze/main.go"
+      - "cmd/ta-analyze/main.go"
   environment:
     name: production
 

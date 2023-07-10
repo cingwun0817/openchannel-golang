@@ -120,7 +120,7 @@ GOOS=linux GOARCH=amd64 go build -o bin/scylla-api cmd/scylla-api/main.go
 
 (Linux/AMD64)
 ```
-GOOS=linux GOARCH=amd64 go build -o bin/ta-store-analyze cmd/ta-store-analyze/main.go
+GOOS=linux GOARCH=amd64 go build -o bin/ta-analyze cmd/ta-analyze/main.go
 ```
 
 ## Insert Media Data
